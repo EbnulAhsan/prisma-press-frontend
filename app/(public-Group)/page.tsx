@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 
 
 export default function HomePage() {
@@ -9,7 +10,9 @@ export default function HomePage() {
     
 
 
-     
+      <Button>
+        Click me 
+     </Button>
     </div>
   );
 }
