@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 export default function LoginPage() {
+    console.log(process.env.BACKEND_API_URL)
     return (
         <Card className="w-full max-w-sm">
             <CardHeader>
