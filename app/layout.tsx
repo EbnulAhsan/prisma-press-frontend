@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { DM_Sans, Noto_Serif } from "next/font/google";
 import { cn } from "@/lib/utils";
+import { Toaster } from "sonner";
 
 const notoSerifHeading = Noto_Serif({subsets:['latin'],variable:'--font-heading'});
 
@@ -22,6 +23,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
 
         {/* {Navbar} */}
+
+        <Toaster position="top-right" richColors />
 
         {children}
 
