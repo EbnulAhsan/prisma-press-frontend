@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { loginAction } from "../_actions/authActions"
-import { use, useActionState, useEffect } from "react"
+import { useActionState, useEffect } from "react"
 import { toast } from "sonner"
 
 const LoginForm = () => {
 
     const [state, action, pending] = useActionState(loginAction, false)
+
+    console.log(state, "state")
 
     useEffect(() => {
 

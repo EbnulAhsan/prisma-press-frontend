@@ -1,5 +1,7 @@
 "use server"
 
+import { cookies } from "next/headers"
+
 type LoginState = {
     success: true,
     statusCode: number,
@@ -37,9 +39,28 @@ export const loginAction = async (prevState: unknown,
     })
 
 
-    const result = await res.json()
+    const result : LoginState = await res.json()
 
-    console.log(result)
+    // console.log(result)
+
+    if (result.success) {
+        const cookiesStore = await cookies()
+
+        cookiesStore.set("accessToken", result.data.accessToken, {
+            httpOnly: true,
+            maxAge: 60 * 60 * 24,
+            sameSite: "lax",
+        })
+        
+
+        cookiesStore.set("refreshToken", result.data.refreshToken, {
+            httpOnly: true,
+            maxAge: 60 * 60 * 24 * 7,
+            sameSite: "lax",
+        })
+    }
+
+
 
     return result
 
