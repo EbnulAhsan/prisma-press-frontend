@@ -1,157 +1,149 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import {
-    ChevronDown,
-    CreditCard,
-    LogOut,
-    Settings,
-    UserRound,
-} from "lucide-react"
-
-import { Avatar, AvatarFallback } from "../ui/avatar"
-import { Button } from "@/components/ui/button"
 import {
     DropdownMenu,
     DropdownMenuContent,
-    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
+import { logout } from "@/service/logout";
+import { LogOut, Settings, User } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Button } from "../ui/button";
 
+// Navigation items configuration
 const navItems = [
-    { label: "Home", href: "#home" },
-    { label: "About", href: "#about" },
-    { label: "Services", href: "#services" },
-    { label: "Contact", href: "#contact" },
-]
+    { label: "Home", href: "/" },
+    { label: "About", href: "/about" },
+    { label: "Services", href: "/services" },
+    { label: "Contact", href: "/contact" },
+];
 
+// User menu items configuration
+const userMenuItems = [
+    { label: "Profile", icon: User, action: "profile" },
+    { label: "Settings", icon: Settings, action: "settings" },
+];
 
+type IUser = {
+    success: boolean,
+    message: string,
+    data: {
+        profile: {
+            id: string,
+            name: string,
+            email: string,
+            activeStatus: string,
+            role: string,
+            createdAt: string,
+            updatedAt: string,
+            profile: {
+                id: string,
+                profilePhoto: string,
+                bio: string | null,
+                userId: string,
+                createdAt: string,
+                updatedAt: string
+            }
+        }
+    }
+}
 
-const accountItems = [
-    { label: "Profile", icon: UserRound },
-    { label: "Billing", icon: CreditCard },
-    { label: "Settings", icon: Settings },
-]
+type NavbarProps = {
+    user: IUser
+}
 
-export function SiteNavbar() {
+export function Navbar({ user }: NavbarProps) {
+    const router = useRouter()
+    const handleUserMenuAction = async (action: string) => {
+
+        if (action === "logout") {
+            await logout();
+            toast.success("User Logged Out Successfully!");
+            router.push("/login");
+        }
+    };
+
     return (
-        <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
-            <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-5 lg:px-8">
-                <Link
-                    href="#overview"
-                    className="flex shrink-0 items-center gap-2.5"
-                    aria-label="Northstar home"
-                >
-                    <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground">
-                        P
-                    </span>
-                    <span className="text-sm font-semibold tracking-tight">
-                        Prisma-Press
-                    </span>
-                </Link>
+        <nav className="border-b border-border">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex items-center justify-between h-16">
+                    {/* Logo */}
+                    <Link href="/" className="shrink-0">
+                        <span className="text-2xl font-bold text-primary">
+                            NextJs Press
+                        </span>
+                    </Link>
 
-                <nav
-                    className="hidden items-center gap-1 md:flex"
-                    aria-label="Main navigation"
-                >
-                    {navItems.map((item, index) => (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={`rounded-md px-3 py-2 text-sm transition-colors hover:bg-muted ${index === 0
-                                ? "bg-muted font-medium"
-                                : "text-muted-foreground"
-                                }`}
-                        >
-                            {item.label}
-                        </Link>
-                    ))}
-                </nav>
-
-                <div className="ml-auto flex items-center gap-2">
-                    <Button variant="outline" size="sm" className="hidden sm:inline-flex">
-                        Share feedback
-                    </Button>
-
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                className="h-10 gap-2 rounded-full px-1.5 pr-2"
-                                aria-label="Open user menu"
+                    {/* Nav Links */}
+                    <div className="hidden md:absolute md:left-1/2 md:transform md:-translate-x-1/2 md:flex md:items-center md:gap-8">
+                        {navItems.map((item) => (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className="text-foreground hover:text-primary transition-colors text-sm font-medium"
                             >
-                                <Avatar size="sm">
-                                    <AvatarFallback className="bg-primary text-primary-foreground">
-                                        AS
-                                    </AvatarFallback>
-                                </Avatar>
+                                {item.label}
+                            </Link>
+                        ))}
+                    </div>
 
-                                <span className="hidden text-sm font-medium sm:inline">
-                                    Alex Smith
-                                </span>
-
-                                <ChevronDown className="hidden sm:block" aria-hidden="true" />
+                    {/* User Dropdown */}
+                    {
+                        user.success ? (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <div className="cursor-pointer">
+                                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                            <User className="w-4 h-4 text-primary" />
+                                        </div>
+                                    </div>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-56">
+                                    <DropdownMenuLabel className="font-normal">
+                                        <div className="flex flex-col gap-1">
+                                            <p className="text-sm font-medium">
+                                                {user.data?.profile.name}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {user.data?.profile.email}
+                                            </p>
+                                        </div>
+                                    </DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    {userMenuItems.map((item) => {
+                                        const Icon = item.icon;
+                                        return (
+                                            <DropdownMenuItem
+                                                key={item.action}
+                                                onClick={() => handleUserMenuAction(item.action)}
+                                            >
+                                                <Icon className="w-4 h-4 mr-2" />
+                                                <span>{item.label}</span>
+                                            </DropdownMenuItem>
+                                        );
+                                    })}
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={async () => {
+                                        await handleUserMenuAction("logout");
+                                    }}>
+                                        <LogOut className="w-4 h-4 mr-2" />
+                                        <span>Log out</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        ) : <Link href={"/login"} >
+                            <Button className="cursor-pointer">
+                                Login
                             </Button>
-                        </DropdownMenuTrigger>
-
-                        <DropdownMenuContent align="end" className="w-56">
-                            <DropdownMenuGroup>
-                                <DropdownMenuLabel>
-                                    <p className="font-medium">Alex Smith</p>
-                                    <p className="font-normal text-muted-foreground">
-                                        alex@northstar.dev
-                                    </p>
-                                </DropdownMenuLabel>
-                            </DropdownMenuGroup>
-
-                            <DropdownMenuSeparator />
-
-                            <DropdownMenuGroup>
-                                {accountItems.map((item) => {
-                                    const Icon = item.icon
-
-                                    return (
-                                        <DropdownMenuItem key={item.label}>
-                                            <Icon aria-hidden="true" />
-                                            {item.label}
-                                        </DropdownMenuItem>
-                                    )
-                                })}
-                            </DropdownMenuGroup>
-
-                            <DropdownMenuSeparator />
-
-                            <DropdownMenuItem>
-                                <LogOut aria-hidden="true" />
-                                Log out
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                        </Link>
+                    }
                 </div>
             </div>
-
-            <nav
-                className="flex gap-1 overflow-x-auto border-t px-5 py-2 md:hidden"
-                aria-label="Mobile navigation"
-            >
-                {navItems.map((item, index) => (
-                    <Link
-                        key={item.href}
-                        href={item.href}
-                        className={`shrink-0 rounded-md px-3 py-1.5 text-sm ${index === 0
-                            ? "bg-muted font-medium"
-                            : "text-muted-foreground"
-                            }`}
-                    >
-                        {item.label}
-                    </Link>
-                ))}
-            </nav>
-        </header>
-    )
-
-
+        </nav>
+    );
 }
