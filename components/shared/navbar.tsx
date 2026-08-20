@@ -9,7 +9,7 @@ import {
     UserRound,
 } from "lucide-react"
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "../ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
     DropdownMenu,
@@ -22,10 +22,13 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 const navItems = [
-    { label: "Overview", href: "#overview" },
-    { label: "Projects", href: "#projects" },
-    { label: "Activity", href: "#activity" },
+    { label: "Home", href: "#home" },
+    { label: "About", href: "#about" },
+    { label: "Services", href: "#services" },
+    { label: "Contact", href: "#contact" },
 ]
+
+
 
 const accountItems = [
     { label: "Profile", icon: UserRound },
@@ -43,10 +46,10 @@ export function SiteNavbar() {
                     aria-label="Northstar home"
                 >
                     <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground">
-                        N
+                        P
                     </span>
                     <span className="text-sm font-semibold tracking-tight">
-                        northstar
+                        Prisma-Press
                     </span>
                 </Link>
 
@@ -74,26 +77,24 @@ export function SiteNavbar() {
                     </Button>
 
                     <DropdownMenu>
-                        <DropdownMenuTrigger
-                            render={
-                                <Button
-                                    variant="ghost"
-                                    className="h-10 gap-2 rounded-full px-1.5 pr-2"
-                                    aria-label="Open user menu"
-                                />
-                            }
-                        >
-                            <Avatar size="sm">
-                                <AvatarFallback className="bg-primary text-primary-foreground">
-                                    AS
-                                </AvatarFallback>
-                            </Avatar>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                className="h-10 gap-2 rounded-full px-1.5 pr-2"
+                                aria-label="Open user menu"
+                            >
+                                <Avatar size="sm">
+                                    <AvatarFallback className="bg-primary text-primary-foreground">
+                                        AS
+                                    </AvatarFallback>
+                                </Avatar>
 
-                            <span className="hidden text-sm font-medium sm:inline">
-                                Alex Smith
-                            </span>
+                                <span className="hidden text-sm font-medium sm:inline">
+                                    Alex Smith
+                                </span>
 
-                            <ChevronDown className="hidden sm:block" aria-hidden="true" />
+                                <ChevronDown className="hidden sm:block" aria-hidden="true" />
+                            </Button>
                         </DropdownMenuTrigger>
 
                         <DropdownMenuContent align="end" className="w-56">
@@ -151,4 +152,6 @@ export function SiteNavbar() {
             </nav>
         </header>
     )
+
+
 }
