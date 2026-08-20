@@ -4,6 +4,8 @@ import "./globals.css";
 import { DM_Sans, Noto_Serif } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { Toaster } from "sonner";
+import Navbar from "@/components/shared/navbar";
+
 
 const notoSerifHeading = Noto_Serif({subsets:['latin'],variable:'--font-heading'});
 
@@ -21,6 +23,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={cn("h-full", "antialiased", "font-sans", dmSans.variable, notoSerifHeading.variable)}
     >
       <body className="min-h-full flex flex-col">
+
+        <Navbar />
+
+     
 
         {/* {Navbar} */}
 

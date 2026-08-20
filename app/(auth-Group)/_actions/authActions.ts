@@ -1,6 +1,7 @@
 "use server"
 
 import { cookies } from "next/headers"
+import { redirect } from "next/navigation"
 
 type LoginState = {
     success: true,
@@ -14,7 +15,7 @@ type LoginState = {
 
 
 export const loginAction = async (prevState: unknown,
- formData: FormData
+    formData: FormData
 ) => {
 
     console.log(formData)
@@ -39,7 +40,7 @@ export const loginAction = async (prevState: unknown,
     })
 
 
-    const result : LoginState = await res.json()
+    const result: LoginState = await res.json()
 
     // console.log(result)
 
@@ -51,13 +52,15 @@ export const loginAction = async (prevState: unknown,
             maxAge: 60 * 60 * 24,
             sameSite: "lax",
         })
-        
+
 
         cookiesStore.set("refreshToken", result.data.refreshToken, {
             httpOnly: true,
             maxAge: 60 * 60 * 24 * 7,
             sameSite: "lax",
         })
+
+        redirect("/dashboard")
     }
 
 

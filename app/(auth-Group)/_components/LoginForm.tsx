@@ -7,16 +7,23 @@ import { Input } from "@/components/ui/input"
 import { loginAction } from "../_actions/authActions"
 import { useActionState, useEffect } from "react"
 import { toast } from "sonner"
+// import { useRouter } from "next/navigation"
 
 const LoginForm = () => {
 
-    const [state, action, pending] = useActionState(loginAction, false) // here us/eractionState throwing some error you have to fix it by tomorrow ,,, and you have to add this function to git ,, 15 tarikh is the dead line for the sdet assignment and programming hero next level assignment dead line ,,, you have to do all the work by tomorrow 
+    const [state, action, pending] = useActionState(loginAction, false) 
+
+    // const router = useRouter()  its use for client side navigation 
+
+
     console.log(state, "state")
 
     useEffect(() => {
 
         if (state?.success) {
             toast.success(state.message || "Login successful")
+
+            // router.push("/dashboard")
         }
 
         if (state && !state.success) {
