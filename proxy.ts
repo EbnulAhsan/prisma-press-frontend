@@ -3,6 +3,13 @@ import type { NextRequest } from 'next/server'
 
 // This function can be marked `async` if using `await` inside
 export function proxy(request: NextRequest) {
+
+    const pathname = request.nextUrl.pathname
+
+    console.log(pathname, "pathname")
+
+    console.log(request.nextUrl, "request")
+    console.log("proxy")
     return NextResponse.redirect(new URL('/', request.url))
 }
 
@@ -10,5 +17,8 @@ export function proxy(request: NextRequest) {
 // export default function proxy(request: NextRequest) { ... }
 
 export const config = {
-    matcher: '/dashboard/:path*',
-}
+    matcher: [
+        '/dashboard/:path*',
+        '/admin-dashboad/:path*'
+    ]
+} 
