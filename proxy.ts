@@ -57,13 +57,34 @@ export async function proxy(request: NextRequest) {
     const isAuthRoute = AUTH_ROUTES.some((route) => pathname === route || pathname.startsWith(route + "/"))
 
 
-//   aauthenticaated paagess protection 
+    //   aauthenticaated paagess protection 
 
     if (!accessToken && !isPublicRoute && !isAuthRoute) {
         return NextResponse.redirect(new URL('/login', request.url))
 
 
     }
+
+    // authorization-----
+
+    // authorization-----
+
+    // Shudhu USER /dashboard e jete parbe
+    if (pathname.startsWith("/dashboard") && userRole !== "USER") {
+        return NextResponse.redirect(new URL('/not-found', request.url));
+    }
+
+    // Shudhu ADMIN /admin-dashboard e jete parbe
+    if (pathname.startsWith("/admin-dashboard") && userRole !== "ADMIN") {
+        return NextResponse.redirect(new URL('/not-found', request.url));
+    }
+
+    // Shudhu AUTHOR /author-dashboard e jete parbe
+    if (pathname.startsWith("/author-dashboard") && userRole !== "AUTHOR") {
+        return NextResponse.redirect(new URL('/not-found', request.url));
+    }
+
+
 
 
 
