@@ -5,6 +5,11 @@ import { NextRequest } from 'next/server'
 import jwt, { JwtPayload } from "jsonwebtoken"
 
 const AUTH_ROUTES = ["/login", "/register"]
+// public route------
+
+const PUBLIC_ROUTES = ["/", "/news"]
+
+
 
 // This function can be marked `async` if using `await` inside
 export async function proxy(request: NextRequest) {
@@ -44,6 +49,23 @@ export async function proxy(request: NextRequest) {
         }
 
     }
+
+    // checking user route is public or protected
+
+    const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname === route || pathname.startsWith(route + "/"))
+
+    const isAuthRoute = AUTH_ROUTES.some((route) => pathname === route || pathname.startsWith(route + "/"))
+
+
+//   aauthenticaated paagess protection 
+
+    if (!accessToken && !isPublicRoute && !isAuthRoute) {
+        return NextResponse.redirect(new URL('/login', request.url))
+
+
+    }
+
+
 
 
 
