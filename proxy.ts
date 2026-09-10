@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { NextRequest } from 'next/server'
 import jwt, { JwtPayload } from "jsonwebtoken"
+import { jwtUtils } from './lib/jwt'
 
 const AUTH_ROUTES = ["/login", "/register"]
 // public route------
@@ -18,7 +19,7 @@ export async function proxy(request: NextRequest) {
 
     // 1st approach to get coockies -------------------------
 
-    // const cookieStore = await cookies()
+    const cookieStore = await cookies()
 
     // const accessToken = cookieStore.get("accessToken")
 
@@ -28,12 +29,22 @@ export async function proxy(request: NextRequest) {
     // 2nd approach to get coockies ------------------
 
     const coockieStore = await cookies()
+
     const accessToken = coockieStore.get("accessToken")?.value
-    const decodedToken = accessToken ? jwt.decode(accessToken) as JwtPayload : null;
+
+    const decodedToken = accessToken ? jwtUtils.verifyToken(accessToken, process.env.JWT_ACCESS_SECRET as string) : null;
 
     let userRole = null
-    if (decodedToken) {
-        userRole = decodedToken.role;
+
+    if (decodedToken?.success && decodedToken.data) {
+        userRole = (decodedToken.data as JwtPayload).role;
+    }
+
+    if (!decodedToken?.success) {
+        cookieStore.delete("accessToken")
+
+        return NextResponse.redirect(new URL('/login', request.url))
+
     }
 
     if (accessToken && AUTH_ROUTES.includes(pathname)) {
@@ -88,7 +99,7 @@ export async function proxy(request: NextRequest) {
 
 
 
-0
+
 
 
 
