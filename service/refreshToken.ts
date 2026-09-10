@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers";
 
-export const refreshToken = async () => {
+export const getNewAccessToken = async () => {
     const cookieStore = await cookies();
 
     const refreshToken = cookieStore.get("accessToken")?.value || null;
@@ -17,22 +17,28 @@ export const refreshToken = async () => {
     }
 
     const res = await fetch(`${process.env.BACKEND_API_URL}/api/auth/refreshToken`, {
+        method: "POST",
         headers: {
+
+
+
+
+
             // Authorization : accessToken as unknown as string,
             // Authorization : `${accessToken}`,
             // Authorization : `Bearer ${accessToken}`
 
-            Cookie: `accessToken=${refreshToken}`
+            Cookie: `refreshToken=${refreshToken}`
         },
 
-        cache: "no-store",
+        cache: "no-cache",
         // next: {
         //     revalidate: 60 * 60 * 24, // 1day
         //     tags: ["my-profile"]
         // }
     });
 
-    const result = res.json();
+    const result = await res.json();
 
 
     return result
