@@ -1,175 +1,107 @@
-
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
-import { NextRequest } from 'next/server'
-import jwt, { JwtPayload } from "jsonwebtoken"
-import { jwtUtils } from './lib/jwt'
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import type { JwtPayload } from "jsonwebtoken";
+import { jwtUtils } from './lib/jwt';
 import { getNewAccessToken } from './service/refreshToken';
 
+const AUTH_ROUTES = ["/login", "/register"];
+const PUBLIC_ROUTES = ["/", "/news", "/payment"];
 
-const AUTH_ROUTES = ["/login", "/register"]
-// public route------
+export default async function proxy(request: NextRequest) {
+    const pathname = request.nextUrl.pathname;
 
-const PUBLIC_ROUTES = ["/", "/news"]
+    const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname === route || pathname.startsWith(route + "/"));
+    const isAuthRoute = AUTH_ROUTES.some((route) => pathname === route || pathname.startsWith(route + "/"));
 
+    // Cookies নেওয়া
+    let accessToken = request.cookies.get("accessToken")?.value;
+    const refreshToken = request.cookies.get("refreshToken")?.value;
 
+    // Tokens ভেরিফাই করা
+    let decodedAccessToken = accessToken
+        ? jwtUtils.verifyToken(accessToken, process.env.JWT_ACCESS_SECRET as string)
+        : null;
 
-// This function can be marked `async` if using `await` inside
-export async function proxy(request: NextRequest) {
+    const decodedRefreshToken = refreshToken
+        ? jwtUtils.verifyToken(refreshToken, process.env.JWT_REFRESH_SECRET as string)
+        : null;
 
-    const pathname = request.nextUrl.pathname
+    let response = NextResponse.next();
 
-    // 1st approach to get coockies -------------------------
+    // Access token expired হলে Refresh token দিয়ে নতুন টোকেন নেওয়া
+    if ((!decodedAccessToken || !decodedAccessToken.success) && decodedRefreshToken?.success) {
+        const result = await getNewAccessToken();
+        if (result?.success) {
+            accessToken = result.data.accessToken;
+            decodedAccessToken = jwtUtils.verifyToken(accessToken!, process.env.JWT_ACCESS_SECRET as string);
 
-    const cookieStore = await cookies()
-
-    // check if there refresh token valid or not ---
-
-
-
-
-    // const accessToken = cookieStore.get("accessToken")
-
-    // ------------------------------------------------------
-
-
-    // 2nd approach to get coockies ------------------
-
-    const coockieStore = await cookies()
-
-    let accessToken = coockieStore.get("accessToken")?.value
-    const refreshToken = request.cookies.get("refreshToken")?.value
-
-
-    let decodedAccessToken = accessToken ? jwtUtils.verifyToken(accessToken, process.env.JWT_ACCESS_SECRET as string) : null;
-
-
-    const decodedRefreshToken = refreshToken ? jwtUtils.verifyToken(refreshToken, process.env.JWT_ACCESS_SECRET as string) : null;
-
-
-    if (!decodedAccessToken?.success && decodedRefreshToken?.success) {
-
-        // here access token has expired but refresh token is still valid
-
-        const result = await getNewAccessToken()
-        if (result.success) {
-            const newAccessToken = result.data.accessToken
-
-            cookieStore.set("accessToken", newAccessToken, {
+            response.cookies.set("accessToken", accessToken!, {
                 httpOnly: true,
                 maxAge: 60 * 60 * 24,
-                sameSite: "lax"
-            })
-
-            accessToken = newAccessToken
-
-            decodedAccessToken = jwtUtils.verifyToken(accessToken!, process.env.JWT_ACCESS_SECRET as string)
+                sameSite: "lax",
+            });
         }
     }
 
-
-
-
-    let userRole = null
-
-    if (decodedAccessToken?.success && decodedAccessToken.data) {
-        userRole = (decodedAccessToken.data as JwtPayload).role;
-    }
-
+    // ১. ইউজার যদি লগইন না থাকে বা টোকেন ইনভ্যালিড হয়
     if (!decodedAccessToken?.success) {
-        cookieStore.delete("accessToken")
-
-        return NextResponse.redirect(new URL('/login', request.url))
-
-    }
-
-    if (accessToken && AUTH_ROUTES.includes(pathname)) {
-        if (userRole === "USER") {
-            return NextResponse.redirect(new URL('/dashboard', request.url))
-        } else if (userRole === "ADMIN") {
-            return NextResponse.redirect(new URL('/admin-dashboard', request.url))
-        } else if (userRole === "AUTHOR") {
-            return NextResponse.redirect(new URL('/author-dashboard', request.url))
-        } else {
-            return NextResponse.redirect(new URL('/', request.url))
-
+        if (accessToken) {
+            response.cookies.delete("accessToken");
         }
 
+        // পাবলিক বা লগইন/রেজিস্টার রুট হলে সরাসরি ঢুকতে দিন
+        if (isPublicRoute || isAuthRoute) {
+            return response;
+        }
+
+        // বাকি যেকোনো প্রটেক্টেড রুটের জন্য লগইনে রিডাইরেক্ট করবে
+        return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // checking user route is public or protected
+    // ২. টোকেন ডাটা এবং রোল এক্সট্র্যাক্ট করা (সরাসরি বা নেস্টেড user অবজেক্ট উভয়ই সাপোর্ট করবে)
+    const tokenData = decodedAccessToken.data as (JwtPayload & {
+        role?: string;
+        isSubscribed?: boolean;
+        user?: {
+            role?: string;
+            isSubscribed?: boolean;
+        };
+    }) | undefined;
 
-    const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname === route || pathname.startsWith(route + "/"))
+    const rawRole = tokenData?.role || tokenData?.user?.role;
+    const userRole = rawRole ? rawRole.toUpperCase() : null;
+    const isSubscribed = Boolean(tokenData?.isSubscribed ?? tokenData?.user?.isSubscribed);
 
-    const isAuthRoute = AUTH_ROUTES.some((route) => pathname === route || pathname.startsWith(route + "/"))
-
-
-    //   aauthenticaated paagess protection
-
-    if (!accessToken && !isPublicRoute && !isAuthRoute) {
-        return NextResponse.redirect(new URL('/login', request.url))
-
-
+    // ৩. লগইন করা ইউজার যদি আবার /login বা /register এ যেতে চায়
+    if (isAuthRoute) {
+        if (userRole === "ADMIN") return NextResponse.redirect(new URL('/admin-dashboard', request.url));
+        if (userRole === "AUTHOR") return NextResponse.redirect(new URL('/author-dashboard', request.url));
+        return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
-    // authorization-----
+    // ৪. Premium পেজ প্রটেকশন (সাবস্ক্রিপশন না থাকলে পেমেন্টে পাঠাবে)
+    if (pathname.startsWith("/premium")) {
+        if (!isSubscribed && userRole !== "ADMIN") {
+            return NextResponse.redirect(new URL('/payment', request.url));
+        }
+    }
 
-    // authorization-----
-
-    // Shudhu USER /dashboard e jete parbe
+    // ৫. রোল-বেজড ড্যাশবোর্ড প্রটেকশন
     if (pathname.startsWith("/dashboard") && userRole !== "USER") {
         return NextResponse.redirect(new URL('/not-found', request.url));
     }
-
-    // Shudhu ADMIN /admin-dashboard e jete parbe
     if (pathname.startsWith("/admin-dashboard") && userRole !== "ADMIN") {
         return NextResponse.redirect(new URL('/not-found', request.url));
     }
-
-    // Shudhu AUTHOR /author-dashboard e jete parbe
     if (pathname.startsWith("/author-dashboard") && userRole !== "AUTHOR") {
         return NextResponse.redirect(new URL('/not-found', request.url));
     }
 
-
-
-
-
-
-
-
-
-    // console.log(pathname, "pathname")
-
-    // console.log(request.nextUrl, "request")
-    // console.log("proxy")
-
-
-
-
-
-
-    // return NextResponse.redirect(new URL('/', request.url))
-
-    return NextResponse.next();
+    return response;
 }
-
-// Alternatively, you can use a default export:
-// export default function proxy(request: NextRequest) { ... }
 
 export const config = {
     matcher: [
-        // '/dashboard/:path*',
-        // '/admin-dashboad/:path*'
-
-        '/((?!api|_next/static|_next/image|.*\\.png$).*)' // proxy will trigger all route except this one .
+        '/((?!api|_next/static|_next/image|favicon.ico|.*\\.png$).*)'
     ]
-}
-
-
-
-
-
-
-
-
+};
