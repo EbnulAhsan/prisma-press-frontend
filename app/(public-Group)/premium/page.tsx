@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { ArrowRight, Clock, Sparkles } from "lucide-react";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation"; // রিডাইরেক্ট ইমপোর্ট করা হলো
 
 interface Post {
     id: string;
@@ -16,32 +17,17 @@ interface Post {
 const PremiumPage = async () => {
     const cookieStore = await cookies();
 
-    // Cookie theke accessToken ber kora
+    // Cookie থেকে accessToken বের করা
     const token =
         cookieStore.get("accessToken")?.value ||
         cookieStore.get("token")?.value;
 
-    // Jodi cookie te token-i na thake
+    // যদি কুকিতে টোকেন না থাকে, তাহলে সরাসরি লগইন পেজে পাঠিয়ে দেবে
     if (!token) {
-        return (
-            <div className="min-h-screen bg-background p-12 text-center">
-                <h2 className="text-2xl font-bold text-amber-500 mb-2">
-                    No Token Found in Cookies
-                </h2>
-                <p className="text-muted-foreground mb-6">
-                    Browser cookie-te kono accessToken pawa jayni. Apni ki logged in?
-                </p>
-                <Link
-                    href="/login"
-                    className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90"
-                >
-                    Go to Login
-                </Link>
-            </div>
-        );
+        redirect("/login");
     }
 
-    // Backend API hit kora
+    // Backend API হিট করা
     const res = await fetch("http://localhost:5000/api/premium", {
         headers: {
             Authorization: `Bearer ${token}`,
@@ -49,27 +35,13 @@ const PremiumPage = async () => {
         cache: "no-store",
     });
 
-    const result = await res.json().catch(() => null);
-
-    // Backend error / 401 / 403 / 500 hole screen-e dekhanor jonno
+    // ব্যাকএন্ড যদি সাবস্ক্রিপশন না থাকার কারণে ব্লক করে দেয় (status 401/403/500), 
+    // তাহলে সরাসরি পেমেন্ট পেজে পাঠিয়ে দেবে
     if (!res.ok) {
-        return (
-            <div className="min-h-screen bg-background p-12 text-center">
-                <h2 className="text-2xl font-bold text-destructive mb-3">
-                    Backend Access Denied (Status: {res.status})
-                </h2>
-                <p className="text-sm text-muted-foreground mb-6">
-                    Backend theke premium content access korte deyni. Error details niche deya holo:
-                </p>
-                <div className="max-w-2xl mx-auto bg-muted p-5 rounded-2xl text-left border border-border">
-                    <pre className="text-xs overflow-x-auto text-foreground whitespace-pre-wrap font-mono">
-                        {JSON.stringify(result, null, 2)}
-                    </pre>
-                </div>
-            </div>
-        );
+        redirect("/payment");
     }
 
+    const result = await res.json().catch(() => null);
     const posts: Post[] = result?.data || [];
 
     return (
