@@ -2,7 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { ArrowRight, Clock, Sparkles } from "lucide-react";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation"; // রিডাইরেক্ট ইমপোর্ট করা হলো
+import { redirect } from "next/navigation";
 
 interface Post {
     id: string;
@@ -14,20 +14,48 @@ interface Post {
     isPremium: boolean;
 }
 
-const PremiumPage = async () => {
-    const cookieStore = await cookies();
+interface PageProps {
+    searchParams: Promise<{
+        session_id?: string;
+        success?: string;
+    }>;
+}
 
-    // Cookie থেকে accessToken বের করা
+const PremiumPage = async ({ searchParams }: PageProps) => {
+    const cookieStore = await cookies();
+    const resolvedParams = await searchParams;
+    const sessionId = resolvedParams?.session_id;
+
     const token =
         cookieStore.get("accessToken")?.value ||
         cookieStore.get("token")?.value;
 
-    // যদি কুকিতে টোকেন না থাকে, তাহলে সরাসরি লগইন পেজে পাঠিয়ে দেবে
     if (!token) {
         redirect("/login");
     }
 
-    // Backend API হিট করা
+    // 1. Session ID thakle verify call kora
+    if (sessionId) {
+        try {
+            const verifyRes = await fetch(
+                `http://localhost:5000/api/subscription/verify-session?session_id=${sessionId}`,
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                    cache: "no-store",
+                }
+            );
+
+            const verifyData = await verifyRes.json().catch(() => null);
+            console.log("Verify API Response in Terminal:", verifyData);
+        } catch (error) {
+            console.error("Session verification network error:", error);
+        }
+    }
+
+    // 2. Premium Content Fetch kora
     const res = await fetch("http://localhost:5000/api/premium", {
         headers: {
             Authorization: `Bearer ${token}`,
@@ -35,9 +63,8 @@ const PremiumPage = async () => {
         cache: "no-store",
     });
 
-    // ব্যাকএন্ড যদি সাবস্ক্রিপশন না থাকার কারণে ব্লক করে দেয় (status 401/403/500), 
-    // তাহলে সরাসরি পেমেন্ট পেজে পাঠিয়ে দেবে
     if (!res.ok) {
+        console.log("Premium API blocked status:", res.status);
         redirect("/payment");
     }
 
@@ -64,7 +91,6 @@ const PremiumPage = async () => {
                                 key={post.id}
                                 className="overflow-hidden rounded-2xl border border-amber-500/20 bg-card shadow-sm transition hover:shadow-md flex flex-col justify-between"
                             >
-                                {/* Image Banner */}
                                 <div className="h-48 w-full bg-muted relative overflow-hidden flex items-center justify-center">
                                     {post.thumbnail ? (
                                         <img
@@ -82,7 +108,6 @@ const PremiumPage = async () => {
                                     </span>
                                 </div>
 
-                                {/* Body */}
                                 <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
                                     <div>
                                         <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">

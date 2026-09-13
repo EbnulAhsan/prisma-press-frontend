@@ -1,47 +1,41 @@
-
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload, Secret, SignOptions } from "jsonwebtoken";
 
-// const createToken =  (
-//     payload: JwtPayload,
-//     secret: Secret,
-//     expiresIn: SignOptions["expiresIn"]
-// ) => {
-//     return jwt.sign(payload, secret, {
-//         expiresIn,
-//     });
-// };
+const createToken = (
+    payload: JwtPayload,
+    secret: Secret,
+    expiresIn: SignOptions["expiresIn"]
+) => {
+    return jwt.sign(payload, secret, {
+        expiresIn,
+    });
+};
 
-
-const verifyToken = (token: string, secret: string) => {
-
-
+const verifyToken = (token: string, secret?: string) => {
     try {
-        const verifiedToken = jwt.verify(token, secret)
+        // Jodi secret pass na hoy ba undefined thake, env theke nibe othoba fallback 'access-secret'
+        const jwtSecret =
+            secret ||
+            process.env.JWT_ACCESS_SECRET ||
+            "access-secret";
+
+        const verifiedToken = jwt.verify(token, jwtSecret);
+
         return {
             success: true,
-            data: verifiedToken
-        }
-
+            data: verifiedToken,
+        };
     } catch (error: any) {
-
-        console.log("token verification failed ", error)
+        console.log("token verification failed:", error?.message || error);
 
         return {
             success: false,
-            error: error.message
-        }
-
-
-    };
-
-}
-
-
-
-
+            error: error?.message || "Token verification failed",
+        };
+    }
+};
 
 export const jwtUtils = {
-    verifyToken
+    createToken,
+    verifyToken,
 };
