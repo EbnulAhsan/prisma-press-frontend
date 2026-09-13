@@ -1,147 +1,149 @@
-import { Suspense } from "react";
+import React from "react";
 import Link from "next/link";
-import {
-    Crown,
-    Sparkles,
-    Flame,
-    Clock,
-    ArrowUpRight,
-    ShieldCheck,
-    TrendingUp,
-    BookOpen
-} from "lucide-react";
-import { NewsSearchBar } from "../_components/news/NewsSearchBar";
-import { NewsSkeleton } from "../_components/news/NewsSkeleton";
-import { PremiumNewsList } from "../_components/news/PremiumNewsList";
+import { ArrowRight, Clock, Sparkles } from "lucide-react";
+import { cookies } from "next/headers";
 
-const PremiumPage = async ({
-    searchParams,
-}: {
-    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}) => {
-    return (
-        <div className="relative min-h-screen overflow-hidden bg-background py-8 sm:py-12">
-            {/* Ambient Glow / Background Gradient */}
-            <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80"
-            >
-                <div
-                    style={{
-                        clipPath:
-                            "polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)",
-                    }}
-                    className="relative left-[calc(50%-12rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-primary/30 to-violet-500/20 opacity-40 sm:left-[calc(50%-32rem)] sm:w-[72.1875rem]"
-                />
+interface Post {
+    id: string;
+    title: string;
+    content: string;
+    thumbnail?: string;
+    tags?: string[];
+    createdAt: string;
+    isPremium: boolean;
+}
+
+const PremiumPage = async () => {
+    const cookieStore = await cookies();
+
+    // Cookie theke accessToken ber kora
+    const token =
+        cookieStore.get("accessToken")?.value ||
+        cookieStore.get("token")?.value;
+
+    // Jodi cookie te token-i na thake
+    if (!token) {
+        return (
+            <div className="min-h-screen bg-background p-12 text-center">
+                <h2 className="text-2xl font-bold text-amber-500 mb-2">
+                    No Token Found in Cookies
+                </h2>
+                <p className="text-muted-foreground mb-6">
+                    Browser cookie-te kono accessToken pawa jayni. Apni ki logged in?
+                </p>
+                <Link
+                    href="/login"
+                    className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90"
+                >
+                    Go to Login
+                </Link>
             </div>
+        );
+    }
 
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-8">
-                {/* Header & Controls Section */}
-                <div className="rounded-2xl border border-border/50 bg-card/40 p-6 backdrop-blur-xl shadow-sm sm:p-8">
-                    <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                        {/* Titles & Tag */}
-                        <div className="space-y-3">
-                            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary shadow-xs backdrop-blur-md">
-                                <Crown className="h-3.5 w-3.5 text-primary" />
-                                <span>Subscriber Exclusive</span>
-                            </div>
+    // Backend API hit kora
+    const res = await fetch("http://localhost:5000/api/premium", {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+        cache: "no-store",
+    });
 
-                            <div>
-                                <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl text-foreground">
-                                    Premium{" "}
-                                    <span className="bg-gradient-to-r from-primary via-violet-500 to-indigo-500 bg-clip-text text-transparent">
-                                        Dispatches
-                                    </span>
-                                </h1>
-                                <p className="mt-1 text-sm sm:text-base text-muted-foreground max-w-xl">
-                                    Curated investigative journalism, expert market breakdowns, and in-depth stories unlocked just for you.
-                                </p>
-                            </div>
-                        </div>
+    const result = await res.json().catch(() => null);
 
-                        {/* Search Bar & Actions Wrapper */}
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
-                            <div className="w-full sm:w-80">
-                                <NewsSearchBar />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Quick Filter / Status Ribbon */}
-                    <div className="mt-6 pt-5 border-t border-border/50 flex flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                            <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                            <span>Updated real-time with member-only editions</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-foreground/80 font-medium">
-                            <Sparkles className="h-3.5 w-3.5 text-primary" />
-                            <span>Full read privileges enabled</span>
-                        </div>
-                    </div>
+    // Backend error / 401 / 403 / 500 hole screen-e dekhanor jonno
+    if (!res.ok) {
+        return (
+            <div className="min-h-screen bg-background p-12 text-center">
+                <h2 className="text-2xl font-bold text-destructive mb-3">
+                    Backend Access Denied (Status: {res.status})
+                </h2>
+                <p className="text-sm text-muted-foreground mb-6">
+                    Backend theke premium content access korte deyni. Error details niche deya holo:
+                </p>
+                <div className="max-w-2xl mx-auto bg-muted p-5 rounded-2xl text-left border border-border">
+                    <pre className="text-xs overflow-x-auto text-foreground whitespace-pre-wrap font-mono">
+                        {JSON.stringify(result, null, 2)}
+                    </pre>
                 </div>
+            </div>
+        );
+    }
 
-                {/* Highlighted Spotlight / Editor's Pick Card */}
-                <div className="group relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-card/80 via-card/50 to-primary/5 p-6 backdrop-blur-xl shadow-lg transition-all duration-300 hover:border-primary/40 hover:shadow-xl sm:p-8">
-                    <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-                        <div className="space-y-3 max-w-2xl">
-                            <div className="flex items-center gap-2">
-                                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-500 border border-amber-500/20">
-                                    <Flame className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
-                                    Editors Choice
-                                </span>
-                                <span className="text-xs text-muted-foreground">• 8 min deep dive</span>
-                            </div>
+    const posts: Post[] = result?.data || [];
 
-                            <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl group-hover:text-primary transition-colors">
-                                The Sovereign Compute Revolution: How Nations Are Building Isolated AI Clusters
-                            </h2>
+    return (
+        <div className="min-h-screen bg-background p-6 md:p-12">
+            <div className="mx-auto max-w-6xl">
+                <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="h-6 w-6 text-amber-500" />
+                    <span className="text-sm font-semibold tracking-wide text-amber-500 uppercase">
+                        Exclusive Area
+                    </span>
+                </div>
+                <h1 className="text-3xl font-bold mb-8">Premium Insights & Articles</h1>
 
-                            <p className="text-sm text-muted-foreground leading-relaxed">
-                                An exclusive investigation into governmental data silos, private models, and how global privacy regulations are transforming the international tech supply chain.
-                            </p>
-
-                            <div className="flex items-center gap-4 pt-1 text-xs text-muted-foreground">
-                                <span className="flex items-center gap-1">
-                                    <Clock className="h-3.5 w-3.5" /> Published 2 hours ago
-                                </span>
-                                <span className="flex items-center gap-1">
-                                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" /> Verified Briefing
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-row md:flex-col items-center md:items-end justify-between gap-4 shrink-0 border-t md:border-t-0 md:border-l border-border/50 pt-4 md:pt-0 md:pl-8">
-                            <div className="text-left md:text-right">
-                                <span className="text-xs font-medium text-muted-foreground">Access Level</span>
-                                <div className="font-semibold text-primary text-sm flex items-center gap-1">
-                                    <Crown className="h-3.5 w-3.5" /> All Subscribers
-                                </div>
-                            </div>
-
-                            <Link
-                                href="#read-spotlight"
-                                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"
+                {posts.length === 0 ? (
+                    <p className="text-muted-foreground">No premium articles available at the moment.</p>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                        {posts.map((post) => (
+                            <article
+                                key={post.id}
+                                className="overflow-hidden rounded-2xl border border-amber-500/20 bg-card shadow-sm transition hover:shadow-md flex flex-col justify-between"
                             >
-                                Read Analysis <ArrowUpRight className="h-3.5 w-3.5" />
-                            </Link>
-                        </div>
-                    </div>
-                </div>
+                                {/* Image Banner */}
+                                <div className="h-48 w-full bg-muted relative overflow-hidden flex items-center justify-center">
+                                    {post.thumbnail ? (
+                                        <img
+                                            src={post.thumbnail}
+                                            alt={post.title}
+                                            className="h-full w-full object-cover"
+                                        />
+                                    ) : (
+                                        <span className="text-sm font-medium text-muted-foreground">
+                                            No Image
+                                        </span>
+                                    )}
+                                    <span className="absolute top-3 right-3 bg-amber-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow">
+                                        PRO
+                                    </span>
+                                </div>
 
-                {/* Content Section */}
-                <div className="relative space-y-4">
-                    <div className="flex items-center justify-between px-1">
-                        <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                            <BookOpen className="h-4 w-4 text-primary" />
-                            All Member Stories
-                        </h3>
-                        <span className="text-xs text-muted-foreground">Filtered for active members</span>
-                    </div>
+                                {/* Body */}
+                                <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
+                                    <div>
+                                        <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                                            <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 font-medium text-amber-600 capitalize">
+                                                {post.tags?.[0] || "Premium"}
+                                            </span>
+                                            <span className="inline-flex items-center gap-1">
+                                                <Clock className="h-3 w-3" /> 5 min read
+                                            </span>
+                                        </div>
 
-                    <Suspense fallback={<NewsSkeleton />}>
-                        <PremiumNewsList searchParams={searchParams} />
-                    </Suspense>
-                </div>
+                                        <h3 className="text-lg font-semibold leading-snug text-foreground line-clamp-2">
+                                            {post.title}
+                                        </h3>
+
+                                        <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed mt-2">
+                                            {post.content}
+                                        </p>
+                                    </div>
+
+                                    <div className="pt-4 border-t border-border/50">
+                                        <Link
+                                            href={`/premium/${post.id}`}
+                                            className="inline-flex items-center gap-1.5 text-sm font-medium text-amber-600 hover:underline"
+                                        >
+                                            Read Exclusive <ArrowRight className="h-4 w-4" />
+                                        </Link>
+                                    </div>
+                                </div>
+                            </article>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );

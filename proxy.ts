@@ -58,19 +58,22 @@ export default async function proxy(request: NextRequest) {
         return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // ২. টোকেন ডাটা এবং রোল এক্সট্র্যাক্ট করা (সরাসরি বা নেস্টেড user অবজেক্ট উভয়ই সাপোর্ট করবে)
+    // ২. টোকেন ডাটা এবং রোল এক্সট্র্যাক্ট করা
     const tokenData = decodedAccessToken.data as (JwtPayload & {
         role?: string;
         isSubscribed?: boolean;
+        subscriptionStatus?: string;
+        subscription?: { status?: string };
         user?: {
             role?: string;
             isSubscribed?: boolean;
+            subscriptionStatus?: string;
+            subscription?: { status?: string };
         };
     }) | undefined;
 
     const rawRole = tokenData?.role || tokenData?.user?.role;
     const userRole = rawRole ? rawRole.toUpperCase() : null;
-    const isSubscribed = Boolean(tokenData?.isSubscribed ?? tokenData?.user?.isSubscribed);
 
     // ৩. লগইন করা ইউজার যদি আবার /login বা /register এ যেতে চায়
     if (isAuthRoute) {
@@ -79,12 +82,9 @@ export default async function proxy(request: NextRequest) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
-    // ৪. Premium পেজ প্রটেকশন (সাবস্ক্রিপশন না থাকলে পেমেন্টে পাঠাবে)
-    if (pathname.startsWith("/premium")) {
-        if (!isSubscribed && userRole !== "ADMIN") {
-            return NextResponse.redirect(new URL('/payment', request.url));
-        }
-    }
+    // ৪. Premium পেজ প্রটেকশন
+    // টোকেন ডাটার অসম্পূর্ণতার কারণে ফলস রিডাইরেক্ট এড়াতে ভেরিফিকেশন সরাসরি /premium পেজের ব্যাকএন্ড কলের উপর ছেড়ে দেওয়া হয়েছে।
+    // ইউজার আনঅথোরাইজড বা আনসাবস্ক্রাইবড হলে backend guard নিজেই ব্লক করবে।
 
     // ৫. রোল-বেজড ড্যাশবোর্ড প্রটেকশন
     if (pathname.startsWith("/dashboard") && userRole !== "USER") {
