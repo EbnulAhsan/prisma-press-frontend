@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight, Clock, Sparkles } from "lucide-react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 
 interface Post {
     id: string;
@@ -22,6 +23,9 @@ interface PageProps {
 }
 
 const PremiumPage = async ({ searchParams }: PageProps) => {
+    // Dynamic request ensure korte connection() call kora holo
+    await connection();
+
     const cookieStore = await cookies();
     const resolvedParams = await searchParams;
     const sessionId = resolvedParams?.session_id;
@@ -34,10 +38,10 @@ const PremiumPage = async ({ searchParams }: PageProps) => {
         redirect("/login");
     }
 
-    // 1. Session ID thakle verify call kora
+    // 1. Session ID thakle age backend verify API hit korbe
     if (sessionId) {
         try {
-            const verifyRes = await fetch(
+            await fetch(
                 `http://localhost:5000/api/subscription/verify-session?session_id=${sessionId}`,
                 {
                     method: "GET",
@@ -47,9 +51,6 @@ const PremiumPage = async ({ searchParams }: PageProps) => {
                     cache: "no-store",
                 }
             );
-
-            const verifyData = await verifyRes.json().catch(() => null);
-            console.log("Verify API Response in Terminal:", verifyData);
         } catch (error) {
             console.error("Session verification network error:", error);
         }
