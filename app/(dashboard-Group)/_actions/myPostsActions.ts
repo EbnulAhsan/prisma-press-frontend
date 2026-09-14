@@ -1,151 +1,118 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-"use server"
+"use server";
 
 import { revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
-import { title } from "process";
-
-// post state as like as login state
 
 type PostState = {
-    success: true,
-    statusCode: number,
-    message: string,
-    data: Record<string, any>
-}
+    success: boolean;
+    statusCode?: number;
+    message: string;
+    data?: Record<string, any>;
+};
 
+// Create new post Server Action
+export const createPost = async (prevState: any, formdata: FormData): Promise<PostState> => {
+    // 1. FormData থেকে ট্যাগ প্রসেসিং
+    const rawTags = formdata.get("tags") as string;
+    const tags = rawTags
+        ? rawTags.split(",").map((tag) => tag.trim()).filter(Boolean)
+        : [];
 
-// new function for updatingff new post
-
-export const createPost = async (prevState: PostState, formdata: FormData) => {
-
-    console.log({
-        title: formdata.get("title"),
-        content: formdata.get("content"),
-        thumbnail: formdata.get("thumbnail"),
-        tags: (formdata.get("tags") as string).split(", "),
-        isPremium: formdata.get("isPremium") === "on"
-
-    })
-
-    // creating payload for body
-
+    // 2. সঠিক Payload অবজেক্ট তৈরি
     const payload = {
-        title: formdata.get("title"),
-        content: formdata.get("content"),
-        thumbnail: formdata.get("thumbnail"),
-        tags: (formdata.get("tags") as string).split(", "),
-        isPremium: formdata.get("isPremium") === "on"
+        title: formdata.get("title") as string,
+        content: formdata.get("content") as string,
+        thumbnail: formdata.get("thumbnail") as string,
+        tags: tags,
+        isPremium: formdata.get("isPremium") === "on",
+    };
 
-    }
+    console.log("Submitting Payload to Backend:", payload);
 
-
-
-
-
-
-
-
-
-
-    // here initially return  empty obj
-
+    // 3. কুকি থেকে টোকেন নেওয়া
     const cookieStore = await cookies();
-
-    const accessToken = cookieStore.get("accessToken")?.value || null;
+    const accessToken =
+        cookieStore.get("accessToken")?.value ||
+        cookieStore.get("token")?.value ||
+        null;
 
     if (!accessToken) {
-        // throw new Error("User Not Logged In!");
-
         return {
             success: false,
-            message: "User not logged in!"
+            message: "User not logged in!",
+        };
+    }
+
+    try {
+        const res = await fetch(`${process.env.BACKEND_API_URL}/api/posts`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json", // 🔥 ফিক্সড: Content-Types নয়, Content-Type হবে
+                Authorization: `Bearer ${accessToken}`, // Bearer ফরম্যাটে পাঠানো নিরাপদ
+                Cookie: `accessToken=${accessToken}`,
+            },
+            body: JSON.stringify(payload),
+        });
+
+        const result = await res.json();
+
+        // 4. ক্যাশ রিভ্যালিডেশন
+        if (result?.success) {
+            revalidateTag("my-posts");
+
+            if (result?.data?.isPremium) {
+                revalidateTag("premium-posts");
+            } else {
+                revalidateTag("public-posts");
+            }
         }
+
+        return result;
+    } catch (error: any) {
+        console.error("Create Post Action Error:", error);
+        return {
+            success: false,
+            message: error.message || "Something went wrong while creating post!",
+        };
     }
+};
 
-    const res = await fetch(`${process.env.BACKEND_API_URL}/api/posts`, {
-        method: "POST",
-        headers: {
-            // Authorization : accessToken as unknown as string,
-            // Authorization : `${accessToken}`,
-            // Authorization : `Bearer ${accessToken}`
-
-            Cookie: `accessToken=${accessToken}`,
-
-            "Content-Types": "application/json"
-        },
-
-        body: JSON.stringify(payload)
-
-
-    });
-
-    const result = await res.json()
-
-    if (result.success) {
-
-        revalidateTag("my-posts", "max")
-
-    }
-
-    if (result.success && result.data.isPremium) {
-        revalidateTag("premium-posts", "max")
-
-    } else {
-        revalidateTag("public-posts", "max")
-
-    }
-
-
-
-
-    return result
-
-}
-
-
-
-
-
-
-
-
-
-
-
-
+// Get current user posts Server Action
 export const getMyPosts = async () => {
     const cookieStore = await cookies();
-
-    const accessToken = cookieStore.get("accessToken")?.value || null;
+    const accessToken =
+        cookieStore.get("accessToken")?.value ||
+        cookieStore.get("token")?.value ||
+        null;
 
     if (!accessToken) {
-        // throw new Error("User Not Logged In!");
-
         return {
             success: false,
-            message: "User not logged in!"
-        }
+            message: "User not logged in!",
+        };
     }
 
-    const res = await fetch(`${process.env.BACKEND_API_URL}/api/posts/my-posts`, {
-        headers: {
-            // Authorization : accessToken as unknown as string,
-            // Authorization : `${accessToken}`,
-            // Authorization : `Bearer ${accessToken}`
+    try {
+        const res = await fetch(`${process.env.BACKEND_API_URL}/api/posts/my-posts`, {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                Cookie: `accessToken=${accessToken}`,
+            },
+            cache: "force-cache",
+            next: {
+                revalidate: 60 * 60 * 24, // 1 day
+                tags: ["my-posts"],
+            },
+        });
 
-            Cookie: `accessToken=${accessToken}`
-        },
-
-        cache: "force-cache",
-        next: {
-            revalidate: 60 * 60 * 24, // 1day
-            tags: ["my-posts"]
-        }
-    });
-
-    const result = res.json();
-
-
-    return result
-}
+        const result = await res.json(); // 🔥 ফিক্সড: await যোগ করা হয়েছে
+        return result;
+    } catch (error: any) {
+        console.error("Get My Posts Error:", error);
+        return {
+            success: false,
+            message: error.message || "Failed to fetch posts",
+        };
+    }
+};
