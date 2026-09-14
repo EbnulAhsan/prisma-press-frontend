@@ -59,12 +59,12 @@ export const createPost = async (prevState: any, formdata: FormData): Promise<Po
 
         // 4. ক্যাশ রিভ্যালিডেশন
         if (result?.success) {
-            revalidateTag("my-posts");
+            revalidateTag("my-posts", "max");
 
             if (result?.data?.isPremium) {
-                revalidateTag("premium-posts");
+                revalidateTag("premium-posts", "max");
             } else {
-                revalidateTag("public-posts");
+                revalidateTag("public-posts", "max");
             }
         }
 
