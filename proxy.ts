@@ -27,7 +27,7 @@ export default async function proxy(request: NextRequest) {
 
     let response = NextResponse.next();
 
-    // রিফ্রেশ টোকেন দিয়ে নতুন অ্যাক্সেস টোকেন জেনারেট করা
+  
     if ((!decodedAccessToken || !decodedAccessToken.success) && decodedRefreshToken?.success) {
         const result = await getNewAccessToken();
         if (result?.success) {
@@ -42,7 +42,7 @@ export default async function proxy(request: NextRequest) {
         }
     }
 
-    // অথেন্টিকেশন ভ্যালিডেশন
+  
     if (!decodedAccessToken?.success) {
         if (accessToken) {
             response.cookies.delete("accessToken");
@@ -55,7 +55,7 @@ export default async function proxy(request: NextRequest) {
         return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // টোকেন ডাটা এবং রোল এক্সট্র্যাক্ট করা
+  
     const tokenData = decodedAccessToken.data as (JwtPayload & {
         role?: string;
         isSubscribed?: boolean;
@@ -72,24 +72,23 @@ export default async function proxy(request: NextRequest) {
     const rawRole = tokenData?.role || tokenData?.user?.role;
     const userRole = rawRole ? rawRole.toUpperCase() : null;
 
-    // লগইন বা রেজিস্টার পেজে থাকলে রোল অনুযায়ী রিডাইরেক্ট
+    
     if (isAuthRoute) {
         if (userRole === "ADMIN") return NextResponse.redirect(new URL('/admin-dashboard', request.url));
         if (userRole === "AUTHOR") return NextResponse.redirect(new URL('/author-dashboard', request.url));
         return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
-    // 1. ADMIN ড্যাশবোর্ড প্রোটেকশন
     if (pathname.startsWith("/admin-dashboard") && userRole !== "ADMIN") {
         return NextResponse.redirect(new URL('/not-found', request.url));
     }
 
-    // 2. AUTHOR ড্যাশবোর্ড প্রোটেকশন
+   
     if (pathname.startsWith("/author-dashboard") && userRole !== "AUTHOR") {
         return NextResponse.redirect(new URL('/not-found', request.url));
     }
 
-    // 3. সাধারণ /dashboard এ হিট করলে রোল অনুযায়ী নিজ নিজ ড্যাশবোর্ডে রিডাইরেক্ট
+ 
     if (pathname.startsWith("/dashboard")) {
         if (userRole === "ADMIN") {
             return NextResponse.redirect(new URL('/admin-dashboard', request.url));
@@ -102,7 +101,7 @@ export default async function proxy(request: NextRequest) {
         }
     }
 
-    // প্রিমিয়াম রুট ভ্যালিডেশন
+    
     if (pathname === "/premium") {
         const subscriptionStatus = await getSubscriptionStatus();
 
