@@ -17,7 +17,7 @@ import { sidebarMenuItems } from "../_config/sidebarMenuItems";
 export default function DashboardSidebar({ user }: Partial<NavbarProps>) {
     const pathname = usePathname();
 
-    // ব্রাউজার কনসোলে (F12) ইউজার ডাটা চেক করার জন্য
+    
     console.log("DASHBOARD_SIDEBAR_USER:", user);
 
     const role = user?.data?.profile?.role;
