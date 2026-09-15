@@ -23,6 +23,51 @@ const USER_SIDEBAR_ITEMS: ISidebarItem[] = [
 ]
 
 
+// const AUTHOR_SIDEBAR_ITEMS: ISidebarItem[] = [
+//     {
+//         label: "Author Dashboard",
+//         href: "/author-dashboard",
+//         icon: LayoutDashboard
+//     },
+//     {
+//         label: "My Posts",
+//         href: "/author-dashboard/my-posts",
+//         icon: FileText
+//     },
+//     {
+//         label: "My Profile",
+//         href: "/dashboard/my-profile",
+//         icon: FileText
+//     },
+// ]
+
+
+// const ADMIN_SIDEBAR_ITEMS: ISidebarItem[] = [
+//     {
+//         label: "Admin Dashboard",
+//         href: "/admin-dashboard",
+//         icon: LayoutDashboard
+//     },
+//     {
+//         label: "My Posts",
+//         href: "/admin-dashboard/my-posts",
+//         icon: FileText
+//     },
+//     {
+//         label: "My Profile",
+//         href: "/dashboard/my-profile",
+//         icon: FileText
+//     },
+// ]
+
+
+
+
+
+
+
+
+
 export const sidebarMenuItems = {
     USER: USER_SIDEBAR_ITEMS,
     AUTHOR: AUTHOR_SIDEBAR_ITEMS,

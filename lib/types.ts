@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { LucideIcon } from "lucide-react";
+
 export type IPostStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 
 export type IAuthor = {
@@ -40,27 +43,23 @@ export type IPost = {
     updatedAt: string;
 };
 
-
-type IUser = {
-}
-
-export type NavbarProps = {
-    user: IUser
-}
-
-export type ISidebarItem = {
-    label: string,
-    href: string,
-    icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>
-}type IUser = {
-}
+export type IUser = {
+    data?: {
+        profile?: {
+            role?: "USER" | "AUTHOR" | "ADMIN" | string;
+            [key: string]: any;
+        };
+        [key: string]: any;
+    };
+    [key: string]: any;
+};
 
 export type NavbarProps = {
-    user: IUser
-}
+    user?: IUser | null;
+};
 
 export type ISidebarItem = {
-    label: string,
-    href: string,
-    icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>
-}
+    label: string;
+    href: string;
+    icon: LucideIcon;
+};
