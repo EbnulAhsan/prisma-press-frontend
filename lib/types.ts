@@ -39,3 +39,28 @@ export type IPost = {
     createdAt: string;
     updatedAt: string;
 };
+
+
+type IUser = {
+}
+
+export type NavbarProps = {
+    user: IUser
+}
+
+export type ISidebarItem = {
+    label: string,
+    href: string,
+    icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>
+}type IUser = {
+}
+
+export type NavbarProps = {
+    user: IUser
+}
+
+export type ISidebarItem = {
+    label: string,
+    href: string,
+    icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>
+}
